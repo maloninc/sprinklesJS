@@ -27,7 +27,13 @@ var s = function (parameter, context) {
       // If fail to parse as CSS, then try it as HTML
       this.init(this.create(parameter));
     }
+  }else{
+    if(parameter.sprinkles === undefined){
+      var dom = document.createTextNode(null);
+      parameter.sprinkles = dom;
+    }
   }
+
 
   // If we're referring a specific node as in on('click', function(){ s(this) })
   // or the select() function returned a single node such as in '#id'
@@ -57,7 +63,7 @@ s.prototype.filteredMap = function(callback){
   return this.map(function(el){
     return callback(el)
   }).filter(function(el){
-    return el != null && el != undefined;
+    return el !== null && el !== undefined;
   });
 }
 
@@ -83,7 +89,7 @@ s.prototype.getNode = function(target){
     return target[0];
   }else if(target instanceof Node){
     return target;
-  }else if(typeof target == 'string'){
+  }else if(typeof target === 'string'){
     return s.prototype.create(target);
   }else{
     throw('Argument must be instace of Node or string or s()');
@@ -165,7 +171,7 @@ s.prototype.remove = function(){
 };
 
 s.prototype.attr = function(attr, val){
-  if(val == undefined){
+  if(val === undefined){
     return this[0].getAttribute(attr);
   }else{
     this.forEach(function(el){
@@ -204,7 +210,7 @@ s.prototype.toggleClass = function(className){
 };
 
 s.prototype.text = function(val){
-  if(val == undefined){
+  if(val === undefined){
     return this[0].innerText
   }else{
     this.forEach(function(el){
@@ -215,7 +221,7 @@ s.prototype.text = function(val){
 };
 
 s.prototype.css = function(prop, val){
-  if(val == undefined){
+  if(val === undefined){
     getComputedStyle(this[0]).getPropertyValue(prop)
   }else{
     this.forEach(function(el){
@@ -226,7 +232,7 @@ s.prototype.css = function(prop, val){
 };
 
 s.prototype.val = function(val){
-  if(val == undefined){
+  if(val === undefined){
     return this[0].value;
   }else{
     this.forEach(function(el){
@@ -251,8 +257,9 @@ s.prototype.show = function(){
 };
 
 s.prototype.on = function(eventName, selector, callback){
-  if(typeof selector == 'string'){
+  if(typeof selector === 'string'){
     this.forEach(function(el){
+      var el = el.sprinkles || el;
       el.addEventListener(eventName, function(e){
           var target = e.target;
           var candidates = document.querySelectorAll(selector);
@@ -264,9 +271,10 @@ s.prototype.on = function(eventName, selector, callback){
           })
       });
     });
-  }else if(typeof selector == 'function'){
+  }else if(typeof selector === 'function'){
     var callback = selector;
     this.forEach(function(el){
+      var el = el.sprinkles || el;
       el.addEventListener(eventName, callback);
     });
   }else{
@@ -275,9 +283,9 @@ s.prototype.on = function(eventName, selector, callback){
 };
 
 s.prototype.ready = function(callback){
-  if(this[0] == document){
-    if (document.readyState != 'loading'){
-      callback();
+  if(this[0] === document){
+    if (document.readyState !== 'loading'){
+      callback.call(this);
     } else {
       document.addEventListener('DOMContentLoaded', callback);
     }
@@ -285,3 +293,23 @@ s.prototype.ready = function(callback){
     throw "Sorry, ready function is only for document object."
   }
 };
+
+
+s.prototype.trigger = function(myEvent, data){
+  if (window.CustomEvent) {
+    var event = new CustomEvent(myEvent, {detail: data});
+  } else {
+    var event = document.createEvent('CustomEvent');
+    event.initCustomEvent(myEvent, true, true, data);
+  }
+
+  this.forEach(function(el){
+    if(el.sprinkles){
+      el.sprinkles.dispatchEvent(event);
+    }else{
+      el.dispatchEvent(event);
+    }
+  });
+}
+
+
