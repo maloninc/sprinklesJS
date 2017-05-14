@@ -28,7 +28,7 @@ var s = function (parameter, context) {
       this.init(this.create(parameter));
     }
   }else{
-    if(parameter.sprinkles === undefined){
+    if( !(parameter instanceof Node) && parameter.sprinkles === undefined){
       var dom = document.createTextNode(null);
       parameter.sprinkles = dom;
     }
@@ -266,7 +266,7 @@ s.prototype.on = function(eventName, selector, callback){
 
           candidates.forEach(function(candidate){
               if(candidate.contains(target)){
-                  callback(e);
+                  callback.call(candidate);
               }
           })
       });
@@ -274,8 +274,10 @@ s.prototype.on = function(eventName, selector, callback){
   }else if(typeof selector === 'function'){
     var callback = selector;
     this.forEach(function(el){
-      var el = el.sprinkles || el;
-      el.addEventListener(eventName, callback);
+      var target = el.sprinkles || el;
+      target.addEventListener(eventName, function(e){
+        callback.call(el);
+      });
     });
   }else{
     throw "Wrong argument. It requires (selector,eventName,callback) or (eventName,callback)";
@@ -295,19 +297,18 @@ s.prototype.ready = function(callback){
 };
 
 
-s.prototype.trigger = function(myEvent, data){
-  if (window.CustomEvent) {
-    var event = new CustomEvent(myEvent, {detail: data});
-  } else {
-    var event = document.createEvent('CustomEvent');
-    event.initCustomEvent(myEvent, true, true, data);
-  }
+s.prototype.trigger = function(myEvent, sync=false){
+  var event = document.createEvent('HTMLEvents');
+  event.initEvent(myEvent, true, true);
 
   this.forEach(function(el){
-    if(el.sprinkles){
-      el.sprinkles.dispatchEvent(event);
+    var target = el.sprinkles || el;
+    if(sync){
+      target.dispatchEvent(event);
     }else{
-      el.dispatchEvent(event);
+      setTimeout(function(){
+        target.dispatchEvent(event);
+      }, 0);
     }
   });
 }

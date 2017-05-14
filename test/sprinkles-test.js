@@ -16,6 +16,19 @@ describe('Event', function() {
     var App = {};
     var response = null;
 
+    it('is register by normal event, "click"', function(){
+        s(document).on('click', '#myButton', function(){
+            response = this;
+        })
+        expect(response == null).toBe(true);
+    });
+
+    it('is triggered by normal event, "click"', function(){
+        s('#myButton').trigger('click', true);
+        expect(response == s('#myButton')[0]).toBe(true);
+        response = null;
+    });
+
     it('is registerd by on("hi")', function(){
         var obj = s(App);
         expect(obj[0].sprinkles != undefined).toBe(true);
@@ -27,7 +40,7 @@ describe('Event', function() {
     });
 
     it('is triggered by trigger("hi")', function(){
-        s(App).trigger('hi');
+        s(App).trigger('hi', true);
         expect(response == 'Hello').toBe(true);
     });
 
